@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>💕 詹智贤 · 3D 爱心</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #0a0008;
+    min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    overflow: hidden; touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+    margin: 0;
+  }
+  canvas {
+    display: block; position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  .overlay {
+    position: fixed; z-index: 10; pointer-events: none;
+    text-align: center; width: 100%; top: 5%;
+  }
+  .overlay h1 {
+    font-size: 20px; font-weight: 300;
+    color: rgba(255,182,193,0.4);
+    letter-spacing: 6px;
+    text-shadow: 0 0 30px rgba(255,105,180,0.2);
+  }
+  .overlay .sub {
+    font-size: 12px; color: rgba(255,182,193,0.2);
+    margin-top: 6px; letter-spacing: 3px;
+  }
+
+  .hint {
+    position: fixed; bottom: 6%; left: 0; width: 100%;
+    text-align: center; z-index: 10; pointer-events: none;
+    font-size: 13px; color: rgba(255,182,193,0.25);
+    letter-spacing: 3px;
+    animation: hintPulse 3s ease-in-out infinite;
+  }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.6; }
+  }
+
+  .surprise-text {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 20; pointer-events: none;
+    font-size: 36px; font-weight: 700;
+    background: linear-gradient(135deg, #FFB6C1, #FF1493, #FF69B4, #FFB6C1);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .surprise-text.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  .surprise-text .small {
+    font-size: 18px;
+    background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @media (max-width: 480px) {
+    .overlay h1 { font-size: 16px; }
+    .surprise-text { font-size: 24px; }
+    .surprise-text .small { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="heartCanvas"></canvas>
+
+<div class="overlay">
+  <h1>💕 詹智贤 💕</h1>
+  <div class="sub">— 你是我 3D 世界里唯一的焦点 —</div>
+</div>
+
+<div class="hint" id="hint">💖 戳戳爱心 · 有惊喜</div>
+
+<div class="surprise-text" id="surpriseText">
+  詹智贤 💕<br>
+  <span class="small">我喜欢你呀</span>
+</div>
+
+<script>
+// ============================================================
+// 3D 爱心粒子系统 — 纯 Canvas 2D + 3D 投影
+// ============================================================
+const canvas = document.getElementById('heartCanvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ============================================================
+// 1. 生成 3D 爱心点云
+// ============================================================
+const chars = ['詹', '智', '贤'];
+const fullName = '詹智贤';
+
+function generateHeart3D(count) {
+  const points = [];
+
+  // 主表面点
+  for (let i = 0; i < count * 0.7; i++) {
+    const u = Math.random() * 2 * Math.PI;
+    const v = Math.random() * 2 * Math.PI;
+
+    // 3D heart: 2D heart curve rotated around Y axis
+    const sinU = Math.sin(u);
+    const cosU = Math.cos(u);
+
+    // 2D heart curve
+    const hx = 16 * sinU * sinU * sinU;
+    const hy = 13 * cosU - 5 * Math.cos(2*u) - 2 * Math.cos(3*u) - Math.cos(4*u);
+
+    // 深度缩放，让爱心有立体感
+    // 顶部（负 y）薄一些，底部（正 y）厚一些
+    const depthScale = 0.35 + 0.15 * (1 - hy / 17);
+    const r = hx * depthScale;
+
+    const px = r * Math.cos(v);
+    const py = -hy * 0.55; // 翻转 Y 并缩放
+    const pz = r * Math.sin(v);
+
+    // 随机选择字符
+    const ch = chars[Math.floor(Math.random() * chars.length)];
+
+    points.push({
+      x: px, y: py, z: pz,
+      char: ch,
+      size: 0.7 + Math.random() * 0.4,
+      hue: 330 + Math.random() * 30, // 粉色调
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  // 内部填充点（让爱心更饱满）
+  for (let i = 0; i < count * 0.3; i++) {
+    const u = Math.random() * 2 * Math.PI;
+    const v = Math.random() * 2 * Math.PI;
+
+    const sinU = Math.sin(u);
+    const cosU = Math.cos(u);
+
+    const hx = 16 * sinU * sinU * sinU;
+    const hy = 13 * cosU - 5 * Math.cos(2*u) - 2 * Math.cos(3*u) - Math.cos(4*u);
+
+    // 向内收缩随机量
+    const shrink = 0.3 + Math.random() * 0.6;
+    const depthScale = (0.35 + 0.15 * (1 - hy / 17)) * shrink;
+    const r = hx * depthScale;
+
+    const px = r * Math.cos(v);
+    const py = -hy * 0.55 * (0.5 + shrink * 0.5);
+    const pz = r * Math.sin(v);
+
+    const ch = chars[Math.floor(Math.random() * chars.length)];
+
+    points.push({
+      x: px, y: py, z: pz,
+      char: ch,
+      size: 0.4 + Math.random() * 0.35,
+      hue: 330 + Math.random() * 30,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  return points;
+}
+
+// ============================================================
+// 2. 渲染
+// ============================================================
+let points = generateHeart3D(5000);
+let rotation = { x: 0.2, y: 0 };
+let autoRotate = true;
+let mouseX = 0, mouseY = 0;
+let isDown = false;
+let burstMode = false;
+let burstTime = 0;
+let scale = 1;
+
+// 投影矩阵
+function project(p, rotX, rotY) {
+  // 绕 Y 轴旋转
+  const cosY = Math.cos(rotY);
+  const sinY = Math.sin(rotY);
+  const x1 = p.x * cosY - p.z * sinY;
+  const z1 = p.x * sinY + p.z * cosY;
+
+  // 绕 X 轴旋转
+  const cosX = Math.cos(rotX);
+  const sinX = Math.sin(rotX);
+  const y1 = p.y * cosX - z1 * sinX;
+  const z2 = p.y * sinX + z1 * cosX;
+
+  // 透视投影
+  const focalLength = 22;
+  const perspective = focalLength / (focalLength + z2);
+
+  return {
+    sx: x1 * perspective,
+    sy: y1 * perspective,
+    z: z2,
+    scale: perspective
+  };
+}
+
+// 绘制一个字符
+function drawChar(char, x, y, size, hue, alpha, isFavorite) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // 发光效果
+  ctx.shadowColor = `hsla(${hue}, 100%, 70%, ${alpha * 0.3})`;
+  ctx.shadowBlur = 8;
+
+  // 渐变填色
+  const grad = ctx.createRadialGradient(x - size*0.3, y - size*0.3, 0, x, y, size);
+  if (isFavorite) {
+    grad.addColorStop(0, '#FFF');
+    grad.addColorStop(0.3, '#FFD700');
+    grad.addColorStop(1, `hsl(${hue}, 90%, 65%)`);
+  } else {
+    grad.addColorStop(0, `hsl(${hue + 10}, 95%, 80%)`);
+    grad.addColorStop(1, `hsl(${hue}, 85%, 55%)`);
+  }
+
+  ctx.fillStyle = grad;
+  ctx.font = `${size}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+  ctx.fillText(char, x, y);
+
+  ctx.restore();
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  // 深色背景渐变
+  const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.6);
+  bgGrad.addColorStop(0, '#1a0011');
+  bgGrad.addColorStop(0.4, '#0d0008');
+  bgGrad.addColorStop(1, '#050005');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 鼠标交互旋转
+  if (isDown && !burstMode) {
+    rotation.y += (mouseX - rotation.y) * 0.02;
+    rotation.x += (mouseY - rotation.x) * 0.02;
+  } else if (autoRotate && !burstMode) {
+    rotation.y += 0.008;
+    rotation.x = 0.2 + Math.sin(Date.now() * 0.0003) * 0.1;
+  }
+
+  // 点击爆发模式
+  if (burstMode) {
+    burstTime += 0.02;
+    rotation.y += 0.03;
+    rotation.x += 0.01;
+    scale = 1 + Math.sin(burstTime * 2) * 0.1;
+    if (burstTime > 2) {
+      burstMode = false;
+      scale = 1;
+    }
+  }
+
+  // 计算屏幕中心
+  const cx = W / 2;
+  const cy = H / 2;
+
+  // 收集所有点的投影信息，按 Z 排序（远到近）
+  const projected = [];
+  for (const p of points) {
+    const proj = project(p, rotation.x, rotation.y);
+    const px = cx + proj.sx * 13 * scale;
+    const py = cy + proj.sy * 13 * scale;
+    const size = Math.max(4, proj.scale * 16 * p.size * scale);
+    const alpha = Math.min(1, (proj.scale - 0.3) / 0.7);
+
+    projected.push({
+      px, py, size, alpha, z: proj.z,
+      char: p.char,
+      hue: p.hue,
+      phase: p.phase
+    });
+  }
+
+  // 按 Z 排序（远到近），实现 3D 遮挡效果
+  projected.sort((a, b) => a.z - b.z);
+
+  // 绘制所有点
+  for (const pt of projected) {
+    if (pt.alpha < 0.05 || pt.size < 2) continue;
+    // 部分字符用金色高亮（随机 10%）
+    const isGold = Math.sin(pt.phase + Date.now() * 0.001) > 0.9;
+    drawChar(pt.char, pt.px, pt.py, pt.size, pt.hue, pt.alpha * 0.9, isGold);
+  }
+
+  // 中心大爱心（光晕）
+  if (!burstMode) {
+    const pulse = 0.6 + Math.sin(Date.now() * 0.002) * 0.2;
+    ctx.save();
+    const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100 * pulse);
+    glowGrad.addColorStop(0, 'rgba(255,105,180,0.06)');
+    glowGrad.addColorStop(0.5, 'rgba(255,50,100,0.03)');
+    glowGrad.addColorStop(1, 'rgba(255,50,100,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 100 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  requestAnimationFrame(render);
+}
+
+// ============================================================
+// 3. 交互
+// ============================================================
+
+// 鼠标拖动旋转
+canvas.addEventListener('mousedown', (e) => {
+  isDown = true;
+  mouseX = rotation.y;
+  mouseY = rotation.x;
+  autoRotate = false;
+});
+canvas.addEventListener('mousemove', (e) => {
+  if (isDown) {
+    const dx = (e.clientX - W/2) / W * 0.5;
+    const dy = (e.clientY - H/2) / H * 0.3;
+    mouseX = dx;
+    mouseY = dy + 0.2;
+  }
+});
+canvas.addEventListener('mouseup', () => {
+  isDown = false;
+  setTimeout(() => { autoRotate = true; }, 2000);
+});
+canvas.addEventListener('mouseleave', () => {
+  isDown = false;
+  setTimeout(() => { autoRotate = true; }, 2000);
+});
+
+// 点击爆发
+canvas.addEventListener('click', (e) => {
+  triggerBurst(e.clientX, e.clientY);
+});
+
+// 触摸支持
+canvas.addEventListener('touchstart', (e) => {
+  const touch = e.touches[0];
+  isDown = true;
+  autoRotate = false;
+}, { passive: true });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (isDown) {
+    const touch = e.touches[0];
+    const dx = (touch.clientX - W/2) / W * 0.5;
+    const dy = (touch.clientY - H/2) / H * 0.3;
+    mouseX = dx;
+    mouseY = dy + 0.2;
+  }
+}, { passive: true });
+
+canvas.addEventListener('touchend', () => {
+  isDown = false;
+  // 如果是快速轻触（点击），触发爆发
+  triggerBurst(W/2, H/2);
+  setTimeout(() => { autoRotate = true; }, 2000);
+}, { passive: true });
+
+function triggerBurst(x, y) {
+  burstMode = true;
+  burstTime = 0;
+
+  // 重新生成更多点瞬间
+  points = generateHeart3D(6500);
+
+  // 闪烁特效
+  document.getElementById('hint').textContent = '💕 詹智贤 💕 我喜欢你呀！';
+  document.getElementById('hint').style.color = 'rgba(255,182,193,0.8)';
+  setTimeout(() => {
+    document.getElementById('hint').textContent = '💖 戳戳爱心 · 有惊喜';
+    document.getElementById('hint').style.color = '';
+  }, 2000);
+
+  // 显示大字
+  const surprise = document.getElementById('surpriseText');
+  surprise.classList.add('show');
+
+  // 更新显示不同的话
+  const messages = [
+    '詹智贤 💕<br><span class="small">我喜欢你呀</span>',
+    '詹智贤 💖<br><span class="small">你是我最重要的人</span>',
+    '詹智贤 💗<br><span class="small">想和你一直在一起</span>',
+    '詹智贤 💝<br><span class="small">遇见你是最美好的事</span>',
+    '詹智贤 🌹<br><span class="small">你是我的全世界</span>',
+  ];
+  surprise.innerHTML = messages[Math.floor(Math.random() * messages.length)];
+
+  setTimeout(() => {
+    surprise.classList.remove('show');
+  }, 2500);
+
+  // 撒花粒子
+  createBurstParticles(x, y);
+}
+
+// ============================================================
+// 4. 点击爆发粒子特效
+// ============================================================
+const burstParticles = [];
+
+function createBurstParticles(x, y) {
+  const emojis = ['💕', '❤️', '💖', '💗', '💝', '✨', '🌟', '🌸', '🌺', '🎀'];
+  for (let i = 0; i < 30; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 200 + Math.random() * 400;
+    burstParticles.push({
+      x: x || W/2,
+      y: y || H/2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 100,
+      char: emojis[Math.floor(Math.random() * emojis.length)],
+      size: 12 + Math.random() * 20,
+      life: 1,
+      gravity: 200 + Math.random() * 100
+    });
+  }
+}
+
+// 爆发粒子更新
+function updateBurstParticles(dt) {
+  for (let i = burstParticles.length - 1; i >= 0; i--) {
+    const p = burstParticles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += p.gravity * dt;
+    p.life -= dt * 0.8;
+    p.size *= 0.995;
+    if (p.life <= 0) {
+      burstParticles.splice(i, 1);
+    }
+  }
+}
+
+// 额外在 canvas 上绘制爆发粒子
+function drawBurstParticles() {
+  for (const p of burstParticles) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.font = `${p.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = `rgba(255,105,180,${p.life * 0.3})`;
+    ctx.shadowBlur = 10;
+    ctx.fillText(p.char, p.x, p.y);
+    ctx.restore();
+  }
+}
+
+// 修改渲染循环支持爆发粒子
+const originalRender = render;
+let lastTime = 0;
+
+function newRender(time) {
+  const dt = Math.min(0.05, (time - lastTime) / 1000);
+  lastTime = time;
+
+  // 调用原有渲染
+  ctx.clearRect(0, 0, W, H);
+
+  const bgGrad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.6);
+  bgGrad.addColorStop(0, '#1a0011');
+  bgGrad.addColorStop(0.4, '#0d0008');
+  bgGrad.addColorStop(1, '#050005');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  if (isDown && !burstMode) {
+    rotation.y += (mouseX - rotation.y) * 0.02;
+    rotation.x += (mouseY - rotation.x) * 0.02;
+  } else if (autoRotate && !burstMode) {
+    rotation.y += 0.008;
+    rotation.x = 0.2 + Math.sin(Date.now() * 0.0003) * 0.1;
+  }
+
+  if (burstMode) {
+    burstTime += 0.02;
+    rotation.y += 0.03;
+    rotation.x += 0.01;
+    scale = 1 + Math.sin(burstTime * 2) * 0.1;
+    if (burstTime > 2) {
+      burstMode = false;
+      scale = 1;
+    }
+  }
+
+  const cx = W / 2;
+  const cy = H / 2;
+
+  const projected = [];
+  for (const p of points) {
+    const proj = project(p, rotation.x, rotation.y);
+    const px = cx + proj.sx * 13 * scale;
+    const py = cy + proj.sy * 13 * scale;
+    const size = Math.max(4, proj.scale * 16 * p.size * scale);
+    const alpha = Math.min(1, (proj.scale - 0.3) / 0.7);
+
+    projected.push({
+      px, py, size, alpha, z: proj.z,
+      char: p.char,
+      hue: p.hue,
+      phase: p.phase
+    });
+  }
+
+  projected.sort((a, b) => a.z - b.z);
+
+  for (const pt of projected) {
+    if (pt.alpha < 0.05 || pt.size < 2) continue;
+    const isGold = Math.sin(pt.phase + Date.now() * 0.001) > 0.9;
+    drawChar(pt.char, pt.px, pt.py, pt.size, pt.hue, pt.alpha * 0.9, isGold);
+  }
+
+  // 中心光晕
+  if (!burstMode) {
+    const pulse = 0.6 + Math.sin(Date.now() * 0.002) * 0.2;
+    ctx.save();
+    const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100 * pulse);
+    glowGrad.addColorStop(0, 'rgba(255,105,180,0.06)');
+    glowGrad.addColorStop(0.5, 'rgba(255,50,100,0.03)');
+    glowGrad.addColorStop(1, 'rgba(255,50,100,0)');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 100 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 爆发粒子
+  updateBurstParticles(dt);
+  drawBurstParticles();
+
+  requestAnimationFrame(newRender);
+}
+
+// 启动
+requestAnimationFrame(newRender);
+
+// 窗口改变时重新生成点
+window.addEventListener('resize', () => {
+  resize();
+  points = generateHeart3D(5000);
+});
+</script>
+</body>
+</html>
