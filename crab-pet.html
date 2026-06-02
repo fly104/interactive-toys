@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🦀 戳戳小螃蟹</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: linear-gradient(180deg, #87CEEB 0%, #E0F7FF 40%, #FFE4B5 70%, #FFD700 100%);
+    min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+  }
+  .scene {
+    position: relative; width: 100vw; height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  /* 地面 */
+  .ground {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 18vh;
+    background: linear-gradient(0deg, #DEB887, #F4E4C1);
+    border-top: 3px solid #C4A265;
+    z-index: 1;
+  }
+  .ground::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 30%;
+    background: repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.1) 40px, rgba(255,255,255,0.1) 42px);
+  }
+
+  /* 螃蟹容器 */
+  .crab-container {
+    position: relative; z-index: 2; cursor: pointer;
+    width: 220px; height: 220px; margin-bottom: 5vh;
+    transform: translateY(0);
+    transition: transform 0.1s;
+  }
+  .crab-container:active { transform: translateY(8px) scale(0.95); }
+
+  /* 螃蟹身体 - CSS纯绘制 */
+  .crab {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .crab.bounce { animation: crabBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes crabBounce {
+    0% { transform: scale(1) rotate(0deg); }
+    30% { transform: scale(1.2) rotate(-5deg); }
+    60% { transform: scale(0.9) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .crab.happy { animation: crabHappy 0.8s ease; }
+  @keyframes crabHappy {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-30px) rotate(-10deg); }
+    50% { transform: translateY(-20px) rotate(10deg); }
+    75% { transform: translateY(-10px) rotate(-5deg); }
+  }
+  .crab.angry { animation: crabAngry 0.5s ease; }
+  @keyframes crabAngry {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-15px) scale(1.1); }
+    50% { transform: translateX(15px) scale(1.1); }
+    75% { transform: translateX(-8px); }
+  }
+
+  /* SVG螃蟹，为了更精致我们用CSS画一个 */
+  .crab-body {
+    position: absolute; width: 160px; height: 120px;
+    background: #FF6B35; border-radius: 50% 50% 45% 45%;
+    left: 50%; top: 40%; transform: translate(-50%, -50%);
+    box-shadow: 0 8px 0 #CC4400, inset 0 -10px 20px rgba(0,0,0,0.1);
+    z-index: 3;
+  }
+  .crab-body::before, .crab-body::after {
+    content: ''; position: absolute; top: -15px;
+    width: 50px; height: 30px; background: #FF6B35;
+    border-radius: 30px 30px 0 0;
+    box-shadow: 0 -3px 0 #CC4400;
+  }
+  .crab-body::before { left: -25px; transform: rotate(15deg); }
+  .crab-body::after { right: -25px; transform: rotate(-15deg); }
+
+  /* 眼睛 */
+  .eyes {
+    position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 30px; z-index: 4;
+  }
+  .eye {
+    width: 35px; height: 40px; background: #FFF; border-radius: 50%;
+    position: relative;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2), inset 0 -3px 6px rgba(0,0,0,0.1);
+    transition: all 0.1s;
+  }
+  .eye .pupil {
+    position: absolute; width: 18px; height: 22px; background: #222;
+    border-radius: 50%; bottom: 6px; left: 50%; transform: translateX(-50%);
+    transition: all 0.15s;
+  }
+  .eye .pupil::after {
+    content: ''; position: absolute; width: 6px; height: 6px;
+    background: #FFF; border-radius: 50%; top: 4px; right: 3px;
+  }
+  .eye-shut .pupil { height: 3px; top: 50%; bottom: auto; transform: translate(-50%, -50%); border-radius: 3px; }
+  .eye-shut .pupil::after { display: none; }
+
+  /* 腮红 */
+  .blush { display: none; }
+  .crab.blushing .blush { display: block; }
+  .blush-l, .blush-r {
+    position: absolute; width: 30px; height: 18px;
+    background: rgba(255, 100, 100, 0.5); border-radius: 50%;
+    top: 55%; z-index: 2;
+  }
+  .blush-l { left: 15px; }
+  .blush-r { right: 15px; }
+
+  /* 腿 */
+  .legs { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; }
+  .leg {
+    position: absolute; width: 65px; height: 8px; background: #FF6B35;
+    border-radius: 8px; transform-origin: right center;
+    box-shadow: 0 2px 0 #CC4400;
+  }
+  .leg:nth-child(1) { top: 50px; right: -20px; transform: rotate(-20deg); }
+  .leg:nth-child(2) { top: 75px; right: -20px; transform: rotate(-5deg); }
+  .leg:nth-child(3) { top: 100px; right: -20px; transform: rotate(10deg); }
+  .leg:nth-child(4) { top: 50px; left: -20px; transform: rotate(20deg); }
+  .leg:nth-child(5) { top: 75px; left: -20px; transform: rotate(5deg); }
+  .leg:nth-child(6) { top: 100px; left: -20px; transform: rotate(-10deg); }
+
+  .leg.walk { animation: legWalk 0.25s ease infinite alternate; }
+  .leg:nth-child(1).walk { animation-delay: 0s; }
+  .leg:nth-child(2).walk { animation-delay: 0.08s; }
+  .leg:nth-child(3).walk { animation-delay: 0.16s; }
+  .leg:nth-child(4).walk { animation-delay: 0.04s; }
+  .leg:nth-child(5).walk { animation-delay: 0.12s; }
+  .leg:nth-child(6).walk { animation-delay: 0.2s; }
+  @keyframes legWalk {
+    0% { transform: rotate(var(--rest)); }
+    100% { transform: rotate(calc(var(--rest) + 15deg)) translateY(-3px); }
+  }
+
+  /* 大钳子 */
+  .claw {
+    position: absolute; width: 40px; height: 45px; background: #FF8C5A;
+    border-radius: 50% 50% 50% 0; top: 55%; z-index: 4;
+    box-shadow: 0 4px 0 #CC4400;
+    transition: transform 0.2s;
+  }
+  .claw::after {
+    content: ''; position: absolute; bottom: -5px;
+    width: 50px; height: 30px; background: #FF8C5A;
+    border-radius: 0 0 50% 50%;
+    box-shadow: 0 3px 0 #CC4400;
+  }
+  .claw-l { left: 30px; transform: rotate(30deg); }
+  .claw-l::after { left: -15px; transform: rotate(10deg); }
+  .claw-r { right: 30px; transform: rotate(-30deg); }
+  .claw-r::after { right: -15px; transform: rotate(-10deg); }
+  .crab.snap .claw-l { animation: snapL 0.3s ease; }
+  .crab.snap .claw-r { animation: snapR 0.3s ease; }
+  @keyframes snapL { 0%,100% { transform: rotate(30deg); } 50% { transform: rotate(0deg) scale(1.2); } }
+  @keyframes snapR { 0%,100% { transform: rotate(-30deg); } 50% { transform: rotate(0deg) scale(1.2); } }
+
+  /* 情绪 + 气泡 */
+  .mood-bubble {
+    position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+    background: #FFF; border-radius: 20px; padding: 10px 20px;
+    font-size: 28px; font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    opacity: 0; transition: all 0.3s ease;
+    white-space: nowrap; z-index: 5;
+    min-width: 60px; text-align: center;
+  }
+  .mood-bubble.show { opacity: 1; top: -75px; }
+  .mood-bubble::after {
+    content: ''; position: absolute; bottom: -8px; left: 50%;
+    transform: translateX(-50%); width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid #FFF;
+  }
+
+  /* 表情浮标 */
+  .emote {
+    position: absolute; font-size: 40px; pointer-events: none;
+    animation: emoteFloat 1.5s ease-out forwards; z-index: 10;
+  }
+  @keyframes emoteFloat {
+    0% { opacity: 1; transform: translateY(0) scale(0.5); }
+    50% { opacity: 1; transform: translateY(-80px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-150px) scale(0.8); }
+  }
+
+  /* 互动历史卡片 */
+  .history {
+    position: absolute; bottom: 20vh; left: 0; right: 0; z-index: 3;
+    display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+    padding: 0 20px;
+  }
+  .history-item {
+    background: rgba(255,255,255,0.85);
+    border-radius: 15px; padding: 6px 12px;
+    font-size: 12px; color: #666;
+    animation: histIn 0.4s ease;
+    backdrop-filter: blur(5px);
+  }
+  @keyframes histIn {
+    0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* 进度/好感度 */
+  .favor-bar {
+    position: absolute; top: 15px; z-index: 5;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    border-radius: 25px; padding: 10px 20px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    font-size: 14px; color: #555;
+  }
+  .favor-bar .bar-track {
+    width: 120px; height: 10px; background: #EEE;
+    border-radius: 10px; overflow: hidden;
+  }
+  .favor-bar .bar-fill {
+    height: 100%; width: 50%;
+    background: linear-gradient(90deg, #FF6B35, #FFD700, #FF4444);
+    border-radius: 10px; transition: width 0.5s ease;
+  }
+
+  /* 小鱼装饰 */
+  .fish {
+    position: absolute; font-size: 24px; opacity: 0.3;
+    animation: fishSwim 8s ease-in-out infinite; pointer-events: none;
+  }
+  @keyframes fishSwim {
+    0%, 100% { transform: translateX(-100px) translateY(0); }
+    25% { transform: translateX(50vw) translateY(-20px); }
+    50% { transform: translateX(100vw) translateY(10px); }
+    75% { transform: translateX(50vw) translateY(-30px); }
+  }
+
+  /* 太阳 */
+  .sun {
+    position: absolute; top: 5%; right: 10%; width: 60px; height: 60px;
+    background: radial-gradient(circle, #FFE066, #FFB800);
+    border-radius: 50%; box-shadow: 0 0 60px rgba(255,200,0,0.4);
+    z-index: 0;
+  }
+
+  /* 云 */
+  .cloud {
+    position: absolute; font-size: 50px; opacity: 0.4; z-index: 0;
+    animation: cloudDrift 20s linear infinite;
+  }
+  .cloud:nth-child(1) { top: 8%; animation-duration: 25s; }
+  .cloud:nth-child(2) { top: 15%; animation-duration: 30s; animation-delay: -10s; }
+  @keyframes cloudDrift {
+    0% { transform: translateX(-150px); }
+    100% { transform: translateX(110vw); }
+  }
+
+  /* 控制按钮 */
+  .controls {
+    position: absolute; bottom: 3vh; z-index: 5;
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+    padding: 0 15px;
+  }
+  .controls button {
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(5px);
+    border: none; border-radius: 20px;
+    padding: 10px 20px; font-size: 14px; color: #555;
+    cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .controls button:active { transform: scale(0.9); box-shadow: 0 1px 5px rgba(0,0,0,0.1); }
+  .controls button.highlight { background: #FF6B35; color: #FFF; }
+
+  .title {
+    position: absolute; top: 6vh; z-index: 5; text-align: center;
+  }
+  .title h1 { font-size: 20px; color: #555; font-weight: 700; }
+  .title p { font-size: 12px; color: #999; margin-top: 4px; }
+
+  /* 星星特效 */
+  .star {
+    position: fixed; pointer-events: none; font-size: 20px;
+    animation: starExplode 0.8s ease-out forwards; z-index: 100;
+  }
+  @keyframes starExplode {
+    0% { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); }
+    100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0) rotate(360deg); }
+  }
+
+  /* 滚动文字横幅 */
+  .crab-think {
+    font-size: 13px; color: #888; text-align: center;
+    margin-top: 10px; min-height: 20px; transition: all 0.3s;
+    z-index: 3; position: relative;
+  }
+
+  @media (max-width: 480px) {
+    .crab-container { width: 160px; height: 160px; }
+    .crab-body { width: 120px; height: 90px; }
+    .crab-body::before, .crab-body::after { width: 38px; height: 22px; top: -10px; }
+    .crab-body::before { left: -18px; }
+    .crab-body::after { right: -18px; }
+    .eye { width: 26px; height: 30px; }
+    .eye .pupil { width: 14px; height: 17px; }
+    .eyes { gap: 22px; }
+    .leg { width: 48px; height: 6px; }
+    .leg:nth-child(1) { top: 38px; right: -15px; }
+    .leg:nth-child(2) { top: 56px; right: -15px; }
+    .leg:nth-child(3) { top: 75px; right: -15px; }
+    .leg:nth-child(4) { top: 38px; left: -15px; }
+    .leg:nth-child(5) { top: 56px; left: -15px; }
+    .leg:nth-child(6) { top: 75px; left: -15px; }
+    .claw { width: 30px; height: 34px; }
+    .claw::after { width: 38px; height: 22px; bottom: -4px; }
+    .claw-l { left: 22px; }
+    .claw-r { right: 22px; }
+    .favor-bar .bar-track { width: 80px; }
+    .favor-bar { font-size: 12px; padding: 8px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="sun"></div>
+  <div class="cloud" style="left: -50px;">☁️</div>
+  <div class="cloud" style="left: -100px;">☁️</div>
+
+  <div class="title">
+    <h1>🦀 戳戳小螃蟹</h1>
+    <p id="statusText">点它！戳它！跟它玩~</p>
+  </div>
+
+  <div class="favor-bar">
+    <span>❤️ 好感度</span>
+    <div class="bar-track">
+      <div class="bar-fill" id="favorFill" style="width: 50%"></div>
+    </div>
+    <span id="favorLevel">友好</span>
+  </div>
+
+  <div class="crab-container" id="crabContainer">
+    <div class="crab" id="crab">
+      <div class="mood-bubble" id="moodBubble">😊</div>
+      <div class="legs">
+        <div class="leg" style="--rest: -20deg"></div>
+        <div class="leg" style="--rest: -5deg"></div>
+        <div class="leg" style="--rest: 10deg"></div>
+        <div class="leg" style="--rest: 20deg"></div>
+        <div class="leg" style="--rest: 5deg"></div>
+        <div class="leg" style="--rest: -10deg"></div>
+      </div>
+      <div class="claw claw-l"></div>
+      <div class="claw claw-r"></div>
+      <div class="eyes" id="eyes">
+        <div class="eye" id="eyeL"><div class="pupil" id="pupilL"></div></div>
+        <div class="eye" id="eyeR"><div class="pupil" id="pupilR"></div></div>
+      </div>
+      <div class="crab-body"></div>
+      <div class="blush-l"></div>
+      <div class="blush-r"></div>
+    </div>
+  </div>
+
+  <div class="crab-think" id="crabThink">👋 你好呀！戳戳我试试~</div>
+
+  <div class="history" id="history"></div>
+
+  <div class="controls">
+    <button id="btnFeed" class="highlight">🦐 喂它</button>
+    <button id="btnPat">👋 摸摸头</button>
+    <button id="btnDance">💃 跳舞</button>
+    <button id="btnSleep">😴 哄睡</button>
+  </div>
+</div>
+
+<script>
+const crab = document.getElementById('crab');
+const moodBubble = document.getElementById('moodBubble');
+const favorFill = document.getElementById('favorFill');
+const favorLevel = document.getElementById('favorLevel');
+const statusText = document.getElementById('statusText');
+const crabThink = document.getElementById('crabThink');
+const container = document.getElementById('crabContainer');
+const history = document.getElementById('history');
+const eyeL = document.getElementById('eyeL');
+const eyeR = document.getElementById('eyeR');
+const pupilL = document.getElementById('pupilL');
+const pupilR = document.getElementById('pupilR');
+
+let favor = 50;
+let isAsleep = false;
+let isDancing = false;
+let clickCount = 0;
+let clickTimer = null;
+let historyItems = [];
+let idleTimer = null;
+let asleep = false;
+
+const moods = [
+  { emoji: '😊', text: '开心！', min: 0 },
+  { emoji: '😄', text: '好开心~', min: 20 },
+  { emoji: '🥰', text: '最喜欢你了！', min: 40 },
+  { emoji: '😍', text: '好幸福呀！', min: 60 },
+  { emoji: '💖', text: '爱了爱了！', min: 80 },
+  { emoji: '🌟', text: '世界第一好！', min: 95 },
+];
+
+const thinkMessages = [
+  '🦀 今天天气真好呀~',
+  '🦀 你忙完啦？来陪我玩！',
+  '🦀 我横着走，你管得着吗~',
+  '🦀 好想吃海鲜大餐...',
+  '🦀 你敲键盘的声音好好听~',
+  '🦀 给我讲个笑话呗~',
+  '🦀 我是这片沙滩最靓的蟹！',
+  '🦀 你看起来有点累，休息一下吧~',
+  '🦀 螃蟹拳！🦀✊',
+  '🦀 大海啊，全是水，螃蟹啊，八条腿~',
+  '🦀 你知道螃蟹为什么横着走吗？因为直走会撞到你心里~',
+];
+
+const sleepMessages = [
+  '😴 Zzz...',
+  '😴 呼噜...呼噜...',
+  '😴 做个海鲜梦...',
+  '😴 zzz... 好吃...',
+  '💤 别吵我...',
+];
+
+const feedMessages = ['🦐 好吃好吃！', '🦐 再来一只！', '🦐 虾虾最棒了！', '🦐 你对我真好~'];
+const patMessages = ['🥰 好舒服~', '😊 再摸摸~', '☺️ 被摸头最幸福了~', '💕 嘿嘿嘿~'];
+
+function setMood() {
+  let mood;
+  for (let i = moods.length - 1; i >= 0; i--) {
+    if (favor >= moods[i].min) { mood = moods[i]; break; }
+  }
+  if (!mood) mood = moods[0];
+  moodBubble.textContent = mood.emoji;
+  moodBubble.className = 'mood-bubble show';
+  setTimeout(() => moodBubble.className = 'mood-bubble', 1500);
+
+  favorFill.style.width = favor + '%';
+  const levels = ['害怕', '陌生', '友好', '信任', '亲密', '挚友'];
+  const idx = Math.min(Math.floor(favor / 17), 5);
+  favorLevel.textContent = levels[idx];
+}
+
+function showEmote(emoji, x, y) {
+  const el = document.createElement('div');
+  el.className = 'emote';
+  el.textContent = emoji;
+  el.style.left = (x || Math.random() * 200 + 20) + 'px';
+  el.style.top = (y || 50) + 'px';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+function spawnStars(count = 6) {
+  const emojis = ['⭐', '✨', '💫', '🌟', '❤️'];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'star';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = (160 + Math.random() * 200) + 'px';
+    el.style.top = (40 + Math.random() * 100) + 'px';
+    const angle = Math.random() * 360;
+    const dist = 60 + Math.random() * 100;
+    el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+    el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 800);
+  }
+}
+
+function addHistory(text) {
+  historyItems.unshift(text);
+  if (historyItems.length > 6) historyItems.pop();
+  history.innerHTML = historyItems.map(h => `<span class="history-item">${h}</span>`).join('');
+}
+
+function crabReact(anim, emote, thinkMsg, historyText) {
+  if (asleep) return;
+  crab.className = 'crab';
+  void crab.offsetWidth;
+  crab.classList.add(anim);
+  if (emote) showEmote(emote);
+  if (thinkMsg) {
+    crabThink.textContent = thinkMsg;
+    statusText.textContent = thinkMsg;
+  }
+  if (historyText) addHistory(historyText);
+  setTimeout(() => crab.className = 'crab', 1000);
+  resetIdle();
+}
+
+function resetIdle() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(goIdle, 8000);
+}
+
+function goIdle() {
+  if (asleep) return;
+  const msg = thinkMessages[Math.floor(Math.random() * thinkMessages.length)];
+  crabThink.textContent = msg;
+  statusText.textContent = msg;
+  startWalking();
+  setTimeout(stopWalking, 2000);
+}
+
+let walkInterval = null;
+function startWalking() {
+  document.querySelectorAll('.leg').forEach(l => l.classList.add('walk'));
+}
+function stopWalking() {
+  document.querySelectorAll('.leg').forEach(l => l.classList.remove('walk'));
+}
+
+// 主交互：戳螃蟹
+container.addEventListener('click', (e) => {
+  if (asleep) { wakeUp(); return; }
+  clickCount++;
+  if (clickCount === 1) {
+    clickTimer = setTimeout(() => {
+      if (clickCount >= 4) {
+        crabReact('bounce', '🤔', '🦀 你干嘛一直戳我啦！', '👆 连续戳戳戳');
+        crab.classList.add('angry');
+        setTimeout(() => crab.className = 'crab', 500);
+        favor = Math.max(0, favor - 5);
+        setMood();
+      } else if (clickCount >= 2) {
+        crabReact('bounce', '😝', '🦀 嘿嘿嘿，痒痒的~', '👆 戳了两下');
+        favor = Math.min(100, favor + 2);
+        setMood();
+      } else {
+        crabReact('bounce', '😊', thinkMessages[Math.floor(Math.random() * thinkMessages.length)], '👆 戳了一下');
+        favor = Math.min(100, favor + 1);
+        setMood();
+      }
+      clickCount = 0;
+    }, 300);
+  }
+});
+
+// 眼睛跟鼠标
+document.addEventListener('mousemove', (e) => {
+  if (asleep) { sleepyEyes(); return; }
+  const rect = container.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = (e.clientX - cx) / 30;
+  const dy = (e.clientY - cy) / 30;
+  const mx = Math.max(-6, Math.min(6, dx));
+  const my = Math.max(-4, Math.min(4, dy));
+  pupilL.style.transform = `translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`;
+  pupilR.style.transform = `translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`;
+});
+
+// 触摸支持
+container.addEventListener('touchmove', (e) => {
+  const touch = e.touches[0];
+  const rect = container.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = (touch.clientX - cx) / 30;
+  const dy = (touch.clientY - cy) / 30;
+  const mx = Math.max(-6, Math.min(6, dx));
+  const my = Math.max(-4, Math.min(4, dy));
+  pupilL.style.transform = `translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`;
+  pupilR.style.transform = `translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`;
+});
+
+// 喂食
+document.getElementById('btnFeed').addEventListener('click', () => {
+  if (asleep) { wakeUp(); return; }
+  favor = Math.min(100, favor + 10);
+  setMood();
+  crabReact('happy', '🎉', `🦀 ${feedMessages[Math.floor(Math.random() * feedMessages.length)]}`, '🦐 喂食 +10 ❤️');
+  spawnStars(4);
+});
+
+// 摸摸头
+document.getElementById('btnPat').addEventListener('click', () => {
+  if (asleep) { wakeUp(); return; }
+  favor = Math.min(100, favor + 5);
+  setMood();
+  crabReact('bounce', '🥰', `🦀 ${patMessages[Math.floor(Math.random() * patMessages.length)]}`, '👋 摸摸头 +5 ❤️');
+});
+
+// 跳舞
+document.getElementById('btnDance').addEventListener('click', () => {
+  if (asleep) { wakeUp(); return; }
+  if (isDancing) return;
+  isDancing = true;
+  favor = Math.min(100, favor + 3);
+  setMood();
+  crabThink.textContent = '🦀 💃 螃蟹舞步！左左右右~前后前后~';
+  statusText.textContent = '螃蟹在跳舞！🕺';
+  addHistory('💃 跳舞');
+  let step = 0;
+  const dance = setInterval(() => {
+    if (step >= 10) {
+      clearInterval(dance);
+      isDancing = false;
+      crab.className = 'crab';
+      stopWalking();
+      crabThink.textContent = '🦀 跳不动了跳不动了...';
+      resetIdle();
+      return;
+    }
+    const isEven = step % 2 === 0;
+    crab.style.transform = isEven ? 'scale(1) rotate(-5deg) translateY(-20px)' : 'scale(1) rotate(5deg) translateY(-10px)';
+    crab.style.transition = 'transform 0.15s';
+    if (step % 2 === 0) showEmote(['💃', '🎵', '🕺', '✨', '🎶'][step % 5]);
+    step++;
+  }, 200);
+  setTimeout(() => { crab.style.transform = ''; crab.style.transition = ''; }, 2500);
+});
+
+// 哄睡
+document.getElementById('btnSleep').addEventListener('click', () => {
+  if (asleep) {
+    wakeUp();
+    return;
+  }
+  goToSleep();
+});
+
+function goToSleep() {
+  asleep = true;
+  favor = Math.min(100, favor + 2);
+  setMood();
+  crab.classList.add('bounce');
+  setTimeout(() => {
+    crab.style.transform = 'rotate(180deg) scale(0.9)';
+    crab.style.transition = 'transform 0.8s ease';
+    crabThink.textContent = '😴 Zzz... 小螃蟹睡着啦... 戳它叫醒~';
+    statusText.textContent = '💤 小螃蟹睡着了';
+    eyeL.classList.add('eye-shut');
+    eyeR.classList.add('eye-shut');
+    addHistory('😴 睡觉');
+    document.querySelectorAll('.leg').forEach(l => l.classList.add('walk'));
+    setTimeout(() => document.querySelectorAll('.leg').forEach(l => l.classList.remove('walk')), 1000);
+  }, 500);
+}
+
+function wakeUp() {
+  if (!asleep) return;
+  asleep = false;
+  crab.style.transform = '';
+  crab.style.transition = '';
+  eyeL.classList.remove('eye-shut');
+  eyeR.classList.remove('eye-shut');
+  crabReact('happy', '😲', '🦀 哇！吓我一跳！在做美梦呢~', '😲 被吵醒');
+  spawnStars(3);
+  resetIdle();
+}
+
+function sleepyEyes() {
+  pupilL.style.transform = 'translate(-50%, -50%) scale(0.3)';
+  pupilR.style.transform = 'translate(-50%, -50%) scale(0.3)';
+}
+
+// 积累自动思考
+let autoThinkTimer = setInterval(() => {
+  if (!asleep && document.visibilityState === 'visible') {
+    goIdle();
+  }
+}, 15000);
+
+// 初始
+setMood();
+resetIdle();
+crabThink.textContent = '👋 戳我、喂我、摸摸头！快来玩~';
+</script>
+</body>
+</html>

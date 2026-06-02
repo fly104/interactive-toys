@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🎋 今日运势签</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: linear-gradient(135deg, #FFE5E5 0%, #FFF5E6 30%, #E6F5FF 60%, #F0E6FF 100%);
+    min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    overflow: hidden; touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+  }
+
+  .scene {
+    position: relative; width: 100vw; height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  /* 顶部 */
+  .header { text-align: center; margin-bottom: 4vh; z-index: 2; }
+  .header h1 {
+    font-size: 28px; color: #D4380D;
+    font-weight: 700; text-shadow: 0 2px 10px rgba(212,56,13,0.1);
+  }
+  .header p {
+    font-size: 14px; color: #999; margin-top: 6px;
+    font-weight: 300;
+  }
+
+  /* 签筒 */
+  .qian-container {
+    position: relative; cursor: pointer; z-index: 2;
+    width: 200px; height: 280px;
+    margin: 2vh auto;
+    transition: transform 0.3s;
+  }
+  .qian-container:active { transform: scale(0.97); }
+  .qian-container.shaking { animation: shake 0.5s ease; }
+  @keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    10% { transform: rotate(-8deg) translateX(-5px); }
+    20% { transform: rotate(8deg) translateX(5px); }
+    30% { transform: rotate(-6deg) translateX(-3px); }
+    40% { transform: rotate(6deg) translateX(3px); }
+    50% { transform: rotate(-4deg) translateX(-2px); }
+    60% { transform: rotate(4deg) translateX(2px); }
+    70% { transform: rotate(-2deg); }
+    80% { transform: rotate(2deg); }
+  }
+
+  /* 签筒身体 */
+  .barrel {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 160px; height: 180px;
+    background: linear-gradient(180deg, #D4380D, #B22222 30%, #8B0000 80%, #660000);
+    border-radius: 10px 10px 15px 15px;
+    box-shadow:
+      0 10px 40px rgba(139,0,0,0.3),
+      inset 0 -20px 30px rgba(0,0,0,0.3),
+      inset 0 10px 20px rgba(255,100,50,0.1);
+    border: 2px solid #8B0000;
+  }
+  .barrel::before {
+    content: '';
+    position: absolute; top: -15px; left: -8px; right: -8px; height: 18px;
+    background: linear-gradient(180deg, #CD5C5C, #B22222);
+    border-radius: 10px 10px 0 0;
+    border: 2px solid #8B0000;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.1);
+  }
+  .barrel::after {
+    content: '';
+    position: absolute; bottom: 30px; left: 10%; width: 80%; height: 2px;
+    background: repeating-linear-gradient(90deg,
+      transparent, transparent 8px,
+      rgba(255,200,100,0.2) 8px, rgba(255,200,100,0.2) 10px
+    );
+  }
+
+  /* 筒里的签 */
+  .sticks {
+    position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+    z-index: 1; width: 140px; height: 160px;
+    display: flex; justify-content: center; align-items: flex-end;
+  }
+  .stick {
+    position: absolute; bottom: 0;
+    width: 6px; height: 100px;
+    background: linear-gradient(180deg, #FFE4B5, #DEB887);
+    border-radius: 3px 3px 2px 2px;
+    transform-origin: bottom center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .stick:nth-child(1) { transform: rotate(-25deg); left: 10px; height: 95px; }
+  .stick:nth-child(2) { transform: rotate(-15deg); left: 25px; height: 105px; }
+  .stick:nth-child(3) { transform: rotate(-5deg); left: 40px; height: 110px; }
+  .stick:nth-child(4) { transform: rotate(0deg); left: 55px; height: 115px; }
+  .stick:nth-child(5) { transform: rotate(5deg); left: 70px; height: 108px; }
+  .stick:nth-child(6) { transform: rotate(15deg); left: 85px; height: 100px; }
+  .stick:nth-child(7) { transform: rotate(25deg); left: 100px; height: 95px; }
+
+  .stick.fly-out {
+    animation: stickFly 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes stickFly {
+    0% { transform: rotate(0deg) translateY(0); opacity: 1; }
+    40% { transform: rotate(10deg) translateY(-180px) translateX(60px); opacity: 1; }
+    60% { transform: rotate(15deg) translateY(-200px) translateX(80px); opacity: 1; }
+    100% { transform: rotate(20deg) translateY(-50px) translateX(120px) scale(0.5); opacity: 0; }
+  }
+
+  /* 签文卡片 */
+  .fortune-card {
+    position: relative; z-index: 3;
+    background: linear-gradient(135deg, #FFFDF5, #FFF8E7);
+    border: 1px solid #E8D5B0;
+    border-radius: 20px; padding: 30px;
+    max-width: 320px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(232,213,176,0.3);
+    opacity: 0; transform: scale(0.8) translateY(20px);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin-top: 3vh;
+    text-align: center;
+  }
+  .fortune-card.show {
+    opacity: 1; transform: scale(1) translateY(0);
+  }
+  .fortune-card .ribbon {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #FF6B6B, #D4380D);
+    color: #FFF; padding: 6px 24px;
+    border-radius: 15px; font-size: 14px; font-weight: 700;
+    box-shadow: 0 4px 15px rgba(212,56,13,0.3);
+  }
+  .fortune-card .type {
+    margin-top: 20px;
+    display: inline-block;
+    padding: 4px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+  }
+  .type.great { background: #FFF0F0; color: #D4380D; }
+  .type.good { background: #FFF7E6; color: #D4880D; }
+  .type.medium { background: #F0FFF0; color: #389E0D; }
+  .type.bad { background: #F0F0FF; color: #1D39C4; }
+  .type.epic { background: linear-gradient(135deg, #FFD700, #FF6B35); color: #FFF; }
+  .fortune-card .fortune-text {
+    font-size: 32px; font-weight: 800; margin: 15px 0 10px;
+    background: linear-gradient(135deg, #D4380D, #FF6B35);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.4;
+  }
+  .fortune-card .detail {
+    font-size: 14px; color: #666; line-height: 1.8;
+    margin: 10px 0;
+  }
+  .fortune-card .advice {
+    background: rgba(212,56,13,0.05);
+    border-radius: 12px; padding: 12px 16px;
+    font-size: 13px; color: #444;
+    margin-top: 12px; line-height: 1.6;
+  }
+
+  /* 摇签按钮 */
+  .draw-btn {
+    margin-top: 3vh;
+    background: linear-gradient(135deg, #D4380D, #B22222);
+    color: #FFF; border: none;
+    padding: 14px 40px; border-radius: 30px;
+    font-size: 18px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(212,56,13,0.3);
+    transition: all 0.3s; z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+    letter-spacing: 2px;
+  }
+  .draw-btn:active { transform: scale(0.92); box-shadow: 0 3px 10px rgba(212,56,13,0.2); }
+  .draw-btn:disabled { opacity: 0.5; transform: none; }
+
+  /* 花瓣飘落 */
+  .petal {
+    position: fixed; pointer-events: none; font-size: 16px;
+    opacity: 0; z-index: 0;
+    animation: petalFall linear forwards;
+  }
+  @keyframes petalFall {
+    0% { transform: translateY(-10vh) rotate(0deg); opacity: 0.5; }
+    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* 灯笼 */
+  .lantern {
+    position: absolute; top: -30px;
+    font-size: 60px; opacity: 0.15; z-index: 0;
+    animation: lanternSway 4s ease-in-out infinite;
+  }
+  .lantern:nth-child(1) { left: 10px; animation-delay: 0s; }
+  .lantern:nth-child(2) { right: 10px; animation-delay: 2s; }
+  @keyframes lanternSway {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+  }
+
+  /* 历史记录 */
+  .history-toggle {
+    position: fixed; top: 15px; right: 15px;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(10px);
+    border: none; border-radius: 50%;
+    width: 40px; height: 40px;
+    font-size: 18px; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 10;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .history-toggle:active { transform: scale(0.9); }
+
+  .history-panel {
+    position: fixed; top: 60px; right: 15px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(15px);
+    border-radius: 15px; padding: 15px;
+    min-width: 180px; max-height: 50vh; overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    z-index: 10;
+    opacity: 0; transform: scale(0.9) translateY(-10px);
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+  .history-panel.show {
+    opacity: 1; transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .history-panel h3 { font-size: 14px; color: #333; margin-bottom: 10px; }
+  .history-panel .h-item {
+    display: flex; gap: 8px; align-items: center;
+    padding: 6px 8px; border-radius: 8px;
+    font-size: 13px; color: #666;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+  .history-panel .h-item:hover { background: rgba(0,0,0,0.05); }
+  .history-panel .h-item .h-type {
+    width: 50px; text-align: center;
+    padding: 2px 6px; border-radius: 5px;
+    font-size: 11px; font-weight: 600;
+  }
+
+  @media (max-width: 480px) {
+    .qian-container { width: 160px; height: 230px; }
+    .barrel { width: 130px; height: 150px; }
+    .sticks { width: 110px; height: 130px; }
+    .stick { height: 80px; }
+    .fortune-card { padding: 20px; margin: 2vh 15px 0; }
+    .fortune-card .fortune-text { font-size: 26px; }
+    .header h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="lantern">🏮</div>
+  <div class="lantern">🏮</div>
+
+  <div class="header">
+    <h1>🎋 今日运势签</h1>
+    <p>摇一摇，看看今天的手气～</p>
+  </div>
+
+  <div class="qian-container" id="qianContainer">
+    <div class="barrel"></div>
+    <div class="sticks" id="sticks">
+      <div class="stick"></div>
+      <div class="stick"></div>
+      <div class="stick"></div>
+      <div class="stick" id="selectedStick"></div>
+      <div class="stick"></div>
+      <div class="stick"></div>
+      <div class="stick"></div>
+    </div>
+  </div>
+
+  <div class="fortune-card" id="fortuneCard">
+    <div class="ribbon" id="fortuneRibbon">🎋 上上签</div>
+    <div class="type great" id="fortuneType">大吉</div>
+    <div class="fortune-text" id="fortuneText">万事如意</div>
+    <div class="detail" id="fortuneDetail">今天是个好日子，心想事成！</div>
+    <div class="advice" id="fortuneAdvice">💡 建议：保持微笑，好运自然来~</div>
+  </div>
+
+  <button class="draw-btn" id="drawBtn">🎋 摇一签</button>
+
+  <button class="history-toggle" id="historyToggle">📜</button>
+  <div class="history-panel" id="historyPanel">
+    <h3>📜 签文记录</h3>
+    <div id="historyList">
+      <div style="font-size:12px;color:#ccc;text-align:center;padding:10px;">还没有记录</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const fortunes = [
+  // 大吉
+  { type: 'great', label: '大吉', ribbon: '🎋 上上签',
+    texts: ['万事如意', '心想事成', '鸿运当头', '吉星高照', '天官赐福'],
+    details: ['今天光芒万丈！做什么都顺风顺水～', '好运挡不住！是时候实现那个小目标了！', '天地同力，今天你就是天选之人！'],
+    advices: ['抓住今天的好运气，去做一直想做的事！', '今天适合表白、投资、做决定！', '保持这份好心情，好事自然会来找你！'] },
+  // 中吉
+  { type: 'good', label: '中吉', ribbon: '🎋 上签',
+    texts: ['一帆风顺', '好事将近', '花开富贵', '喜气洋洋', '步步高升'],
+    details: ['稳稳的幸福正在路上～', '小确幸就在今天，留意身边的美好！', '努力会有回报的，继续加油！'],
+    advices: ['稳步前进，不要急躁。', '对身边的人好一点，好运加倍！', '多出去走走，会有意外收获。'] },
+  // 小吉
+  { type: 'medium', label: '小吉', ribbon: '🎋 中签',
+    texts: ['随遇而安', '平安是福', '宁静致远', '知足常乐', '岁月静好'],
+    details: ['平平淡淡才是真～', '今天适合放松，别给自己太大压力。', '生活就是由小确幸组成的～'],
+    advices: ['泡杯茶，听听音乐，享受慢生活。', '今天不适合做重大决定，先想想再说。', '给朋友发个消息，聊聊天吧。'] },
+  // 末吉
+  { type: 'bad', label: '末吉', ribbon: '🎋 下签',
+    texts: ['稍安勿躁', '静待时机', '韬光养晦', '厚积薄发', '否极泰来'],
+    details: ['今天可能有点小波折，别灰心！', '运气有起有落，平常心就好～', '触底反弹就在眼前！'],
+    advices: ['今天不适合冲动行事，三思而后行。', '早点休息，明天会更好！', '吃点好吃的犒劳自己，心情会变好。'] },
+  // 隐藏款 - 极吉
+  { type: 'epic', label: '极吉🌟', ribbon: '🌟 天选之签',
+    texts: ['天选之人', '逆天改命', '万中无一', '绝世好运', '天命所归'],
+    details: ['!!! 这是万分之一的隐藏签 !!! 今天你是整个宇宙的宠儿！', '天选之签！去买彩票可能会中奖！', '你今天要遇到超级好事！记得回来还愿！'],
+    advices: ['太幸运了！快去跟喜欢的人说话！', '这是改变命运的一天，抓住它！', '转发这个页面，把好运传给朋友吧！'] },
+];
+
+let isShaking = false;
+let history = JSON.parse(localStorage.getItem('fortune_history') || '[]');
+let totalDraws = parseInt(localStorage.getItem('fortune_total') || '0');
+
+function getRandomFortune() {
+  const isEpic = Math.random() < 0.01; // 1% 概率出隐藏款
+  if (isEpic) return fortunes[4];
+
+  const rand = Math.random();
+  if (rand < 0.2) return fortunes[0];  // 20% 大吉
+  if (rand < 0.55) return fortunes[1]; // 35% 中吉
+  if (rand < 0.85) return fortunes[2]; // 30% 小吉
+  return fortunes[3];                   // 15% 末吉
+}
+
+function showFortune() {
+  totalDraws++;
+  localStorage.setItem('fortune_total', totalDraws.toString());
+
+  const fortune = getRandomFortune();
+  const text = fortune.texts[Math.floor(Math.random() * fortune.texts.length)];
+  const detail = fortune.details[Math.floor(Math.random() * fortune.details.length)];
+  const advice = fortune.advices[Math.floor(Math.random() * fortune.advices.length)];
+
+  const card = document.getElementById('fortuneCard');
+  document.getElementById('fortuneRibbon').textContent = fortune.ribbon;
+  document.getElementById('fortuneType').textContent = fortune.label;
+  document.getElementById('fortuneType').className = 'type ' + fortune.type;
+  document.getElementById('fortuneText').textContent = text;
+  document.getElementById('fortuneDetail').textContent = detail;
+  document.getElementById('fortuneAdvice').textContent = '💡 ' + advice;
+
+  card.classList.remove('show');
+  void card.offsetWidth;
+  card.classList.add('show');
+
+  // 记录历史
+  const record = {
+    type: fortune.label,
+    text: text,
+    time: new Date().toLocaleString('zh-CN')
+  };
+  history.unshift(record);
+  if (history.length > 20) history.pop();
+  localStorage.setItem('fortune_history', JSON.stringify(history));
+  updateHistory();
+
+  // 飘花特效
+  createPetals(fortune.type === 'epic' ? 16 : 8);
+}
+
+// 摇签动画
+function drawFortune() {
+  if (isShaking) return;
+  isShaking = true;
+
+  const container = document.getElementById('qianContainer');
+  const btn = document.getElementById('drawBtn');
+  btn.disabled = true;
+
+  // 摇动签筒
+  container.classList.add('shaking');
+
+  // 飞出一根签
+  setTimeout(() => {
+    const sticks = document.querySelectorAll('.stick');
+    const selected = sticks[Math.floor(Math.random() * sticks.length)];
+    selected.classList.add('fly-out');
+
+    setTimeout(() => {
+      selected.classList.remove('fly-out');
+      container.classList.remove('shaking');
+      showFortune();
+      btn.disabled = false;
+      isShaking = false;
+    }, 1500);
+  }, 600);
+}
+
+// 花瓣特效
+function createPetals(count) {
+  const emojis = ['🌸', '🌺', '🏵️', '💮', '✨', '🌟', '❤️'];
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'petal';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = Math.random() * 100 + '%';
+      el.style.fontSize = (12 + Math.random() * 14) + 'px';
+      el.style.animationDuration = (3 + Math.random() * 4) + 's';
+      el.style.opacity = (0.3 + Math.random() * 0.5);
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 7000);
+    }, i * 100);
+  }
+}
+
+// 历史面板
+function updateHistory() {
+  const list = document.getElementById('historyList');
+  if (history.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:#ccc;text-align:center;padding:10px;">还没有记录</div>';
+    return;
+  }
+  list.innerHTML = history.map(h => {
+    const colors = { '大吉': '#D4380D', '中吉': '#D4880D', '小吉': '#389E0D', '末吉': '#1D39C4', '极吉🌟': '#FF6B35' };
+    return `<div class="h-item">
+      <span class="h-type" style="background:${colors[h.type] || '#999'}15;color:${colors[h.type] || '#999'}">${h.type}</span>
+      <span>${h.text}</span>
+      <span style="margin-left:auto;font-size:11px;color:#ccc">${h.time}</span>
+    </div>`;
+  }).join('');
+}
+
+// 摇一摇检测（手机）
+let lastShake = 0;
+if (window.DeviceMotionEvent) {
+  window.addEventListener('devicemotion', (e) => {
+    const acc = e.accelerationIncludingGravity;
+    const magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+    if (magnitude > 25) {
+      const now = Date.now();
+      if (now - lastShake > 2000) {
+        lastShake = now;
+        drawFortune();
+      }
+    }
+  });
+}
+
+// 事件绑定
+document.getElementById('drawBtn').addEventListener('click', drawFortune);
+document.getElementById('qianContainer').addEventListener('click', drawFortune);
+
+// 历史面板开关
+document.getElementById('historyToggle').addEventListener('click', () => {
+  document.getElementById('historyPanel').classList.toggle('show');
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.history-panel') && !e.target.closest('#historyToggle')) {
+    document.getElementById('historyPanel').classList.remove('show');
+  }
+});
+
+// 空格键摇签
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    drawFortune();
+  }
+});
+
+// 初始化
+updateHistory();
+// 首次自动显示
+setTimeout(drawFortune, 500);
+</script>
+</body>
+</html>
