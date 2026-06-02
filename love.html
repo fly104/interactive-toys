@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>💕 给詹智贤</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: linear-gradient(135deg, #1a0011 0%, #3d0020 30%, #6b0033 60%, #4d0025 100%);
+    min-height: 100vh; display: flex; justify-content: center; align-items: center;
+    font-family: 'Georgia', 'PingFang SC', 'Microsoft YaHei', serif;
+    overflow: hidden; touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+    cursor: default;
+  }
+
+  /* ===== 画布 ===== */
+  #heartCanvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1; display: block;
+  }
+
+  /* ===== 主要内容 ===== */
+  .content {
+    position: relative; z-index: 2;
+    text-align: center; padding: 20px;
+    pointer-events: none;
+  }
+  .content > * { pointer-events: auto; }
+
+  /* ===== 大爱心 ===== */
+  .big-heart {
+    font-size: 120px; cursor: pointer; display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 0 40px rgba(255,50,100,0.4));
+    animation: heartPulse 2s ease-in-out infinite;
+    pointer-events: auto;
+    line-height: 1;
+  }
+  .big-heart:active { transform: scale(1.3); }
+  @keyframes heartPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(255,50,100,0.3)); }
+    50% { transform: scale(1.08); filter: drop-shadow(0 0 60px rgba(255,50,100,0.6)); }
+  }
+  .big-heart.explode {
+    animation: heartExplode 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  }
+  @keyframes heartExplode {
+    0% { transform: scale(1); opacity: 1; }
+    30% { transform: scale(1.8); opacity: 0.8; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+
+  /* ===== 名字 ===== */
+  .name {
+    font-size: 42px; font-weight: 700;
+    background: linear-gradient(135deg, #FFB6C1, #FF69B4, #FF1493);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 15px 0 8px;
+    letter-spacing: 4px;
+    text-shadow: none;
+    filter: drop-shadow(0 0 20px rgba(255,105,180,0.3));
+  }
+  .name-sub {
+    font-size: 18px; color: rgba(255,182,193,0.7);
+    margin-bottom: 20px;
+    letter-spacing: 6px;
+  }
+
+  /* ===== 情话卡片 ===== */
+  .message-card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,182,193,0.2);
+    border-radius: 24px; padding: 30px 28px;
+    max-width: 380px; width: 90vw; margin: 20px auto 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.5s ease;
+    position: relative; overflow: hidden;
+    min-height: 100px;
+  }
+  .message-card::before {
+    content: '';
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at center, rgba(255,105,180,0.03) 0%, transparent 60%);
+    animation: cardGlow 6s ease-in-out infinite;
+  }
+  @keyframes cardGlow {
+    0%, 100% { transform: translate(0,0); }
+    50% { transform: translate(5%,5%); }
+  }
+
+  .message-text {
+    font-size: 16px; color: rgba(255,182,193,0.85);
+    line-height: 2; position: relative; z-index: 1;
+    letter-spacing: 1px;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  .message-text .highlight {
+    color: #FF69B4; font-weight: 700;
+  }
+  .message-text .typing-cursor {
+    display: inline-block; width: 2px; height: 1em;
+    background: #FF69B4; margin-left: 2px;
+    animation: blink 0.8s step-end infinite;
+    vertical-align: text-bottom;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ===== 底部互动提示 ===== */
+  .hint {
+    margin-top: 20px; font-size: 14px;
+    color: rgba(255,182,193,0.4);
+    letter-spacing: 2px;
+    animation: hintPulse 3s ease-in-out infinite;
+  }
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  /* ===== 点击爱心特效 ===== */
+  .click-heart {
+    position: fixed; pointer-events: none; z-index: 10;
+    font-size: 24px;
+    animation: clickHeartFloat 1.8s ease-out forwards;
+  }
+  @keyframes clickHeartFloat {
+    0% { opacity: 1; transform: translate(0,0) scale(0.5) rotate(0deg); }
+    50% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(180deg); }
+    100% { opacity: 0; transform: translate(calc(var(--dx)*1.5), calc(var(--dy)*1.5 - 80px)) scale(0.3) rotate(360deg); }
+  }
+
+  /* ===== Celebration ===== */
+  .celebration {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 5;
+  }
+  .confetti {
+    position: absolute; width: 10px; height: 10px;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; }
+  }
+
+  /* ===== 音量 ===== */
+  .music-control {
+    position: fixed; top: 20px; right: 20px; z-index: 20;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,182,193,0.15);
+    border-radius: 50%; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer;
+    transition: all 0.3s;
+    color: rgba(255,182,193,0.6);
+  }
+  .music-control:active { transform: scale(0.9); }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 480px) {
+    .big-heart { font-size: 80px; }
+    .name { font-size: 30px; }
+    .message-card { padding: 20px 18px; }
+    .message-text { font-size: 14px; }
+    .name-sub { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="heartCanvas"></canvas>
+
+<button class="music-control" id="musicBtn">🎵</button>
+
+<div class="content">
+  <div class="big-heart" id="bigHeart">💕</div>
+  <div class="name">詹智贤</div>
+  <div class="name-sub">❤️ 致我最爱的你 ❤️</div>
+
+  <div class="message-card" id="messageCard">
+    <div class="message-text" id="messageText">
+      <span id="typedMessage"></span><span class="typing-cursor" id="cursor">|</span>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">💕 戳戳爱心，有惊喜~</div>
+</div>
+
+<script>
+// ============================================================
+// 1. 爱心粒子系统 (canvas)
+// ============================================================
+const canvas = document.getElementById('heartCanvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// 粒子
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.size = Math.random() * 4 + 2;
+    this.speedX = (Math.random() - 0.5) * 0.8;
+    this.speedY = (Math.random() - 0.5) * 0.8 - 0.3;
+    this.opacity = Math.random() * 0.5 + 0.2;
+    this.hue = Math.random() * 40 + 330; // 330-370 pink range
+    this.life = Math.random() * 200 + 100;
+    this.maxLife = this.life;
+    this.shape = Math.random() > 0.3 ? 'circle' : 'heart';
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    this.life--;
+    if (this.life <= 0 || this.x < -20 || this.x > W + 20 || this.y < -20 || this.y > H + 20) {
+      this.reset();
+      this.life = this.maxLife;
+    }
+    // 闪烁
+    this.opacity = (0.3 + Math.sin(this.life * 0.02) * 0.2) * (this.life / this.maxLife);
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.fillStyle = `hsl(${this.hue}, 90%, 70%)`;
+    if (this.shape === 'heart') {
+      // 小爱心
+      const s = this.size * 0.8;
+      ctx.translate(this.x, this.y);
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.3);
+      ctx.bezierCurveTo(-s * 0.5, -s * 0.3, -s, s * 0.1, 0, s);
+      ctx.bezierCurveTo(s, s * 0.1, s * 0.5, -s * 0.3, 0, s * 0.3);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 发光
+    ctx.shadowColor = `hsl(${this.hue}, 90%, 70%)`;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+const particles = [];
+for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+// 大粒子跟随鼠标
+class CursorParticle {
+  constructor() {
+    this.x = W/2; this.y = H/2;
+    this.targetX = W/2; this.targetY = H/2;
+    this.size = 6; this.opacity = 0.6;
+  }
+  update() {
+    this.x += (this.targetX - this.x) * 0.08;
+    this.y += (this.targetY - this.y) * 0.08;
+    this.opacity = 0.4 + Math.sin(Date.now() * 0.003) * 0.2;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    // 光晕
+    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, 30);
+    gradient.addColorStop(0, 'rgba(255,105,180,0.4)');
+    gradient.addColorStop(0.5, 'rgba(255,105,180,0.1)');
+    gradient.addColorStop(1, 'rgba(255,105,180,0)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 30, 0, Math.PI * 2);
+    ctx.fill();
+    // 中心小爱心
+    ctx.globalAlpha = this.opacity * 0.8;
+    ctx.fillStyle = '#FF69B4';
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💗', this.x, this.y);
+    ctx.restore();
+  }
+}
+
+const cursorParticle = new CursorParticle();
+
+document.addEventListener('mousemove', (e) => {
+  cursorParticle.targetX = e.clientX;
+  cursorParticle.targetY = e.clientY;
+});
+document.addEventListener('touchmove', (e) => {
+  const touch = e.touches[0];
+  cursorParticle.targetX = touch.clientX;
+  cursorParticle.targetY = touch.clientY;
+}, { passive: true });
+
+// 连接线
+function drawConnections() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 80) {
+        ctx.save();
+        ctx.globalAlpha = (1 - dist / 80) * 0.15;
+        ctx.strokeStyle = `hsl(340, 90%, 70%)`;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => { p.update(); p.draw(); });
+  drawConnections();
+  cursorParticle.update();
+  cursorParticle.draw();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+
+// ============================================================
+// 2. 情话打字机
+// ============================================================
+const messages = [
+  "💕 詹智贤，遇见你是我这辈子最幸运的事。",
+  "✨ 你的笑容，是我每天最想看到的风景。",
+  "🌹 和你在一起的每一刻，都像在做梦。",
+  "🌟 你是我平凡生活里，最耀眼的光。",
+  "💗 想和你一起，看遍春夏秋冬。",
+  "🦋 每次看到你，心跳都会漏一拍。",
+  "🌙 晚安和早安，都想第一个说给你听。",
+  "🎀 你是我所有浪漫的起点和终点。",
+  "💝 想把全世界的美好，都攒下来送给你。",
+  "🌸 喜欢你，是我做过最温柔的事。",
+  "💫 跟你在一起的每一天，都是情人节。",
+  "🌺 你是我的独家记忆，无人可替。",
+  "💖 只要你在，我就觉得世界很甜。",
+  "🎵 你是我循环最久的那首歌。",
+  "💕 这辈子，就想牵着你的手不放开。"
+];
+
+let msgIndex = 0;
+let charIndex = 0;
+let isTyping = false;
+const typedEl = document.getElementById('typedMessage');
+const cursorEl = document.getElementById('cursor');
+const hintEl = document.getElementById('hint');
+
+function typeMessage() {
+  isTyping = true;
+  const msg = messages[msgIndex];
+  charIndex = 0;
+  typedEl.textContent = '';
+
+  function type() {
+    if (charIndex < msg.length) {
+      typedEl.textContent += msg[charIndex];
+      charIndex++;
+      setTimeout(type, 40 + Math.random() * 30);
+    } else {
+      isTyping = false;
+      cursorEl.style.display = 'inline-block';
+      setTimeout(nextMessage, 4000);
+    }
+  }
+  type();
+}
+
+function nextMessage() {
+  if (isTyping) return;
+  msgIndex = (msgIndex + 1) % messages.length;
+  cursorEl.style.display = 'inline-block';
+  typeMessage();
+}
+
+// 点击卡片切换情话
+document.getElementById('messageCard').addEventListener('click', () => {
+  if (!isTyping) {
+    msgIndex = (msgIndex + 1) % messages.length;
+    typeMessage();
+  }
+});
+
+
+// ============================================================
+// 3. 点击/触摸产生爱心
+// ============================================================
+const heartEmojis = ['💕', '❤️', '💗', '💖', '💝', '💘', '💓', '💛', '🧡', '💜', '❤️‍🔥', '💞', '🩷', '💋', '🌸', '✨', '🌹', '🎀'];
+
+function createClickHeart(x, y) {
+  const el = document.createElement('div');
+  el.className = 'click-heart';
+  el.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  const dx = (Math.random() - 0.5) * 200;
+  const dy = -Math.random() * 200 - 50;
+  el.style.setProperty('--dx', dx + 'px');
+  el.style.setProperty('--dy', dy + 'px');
+  el.style.fontSize = (16 + Math.random() * 28) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+
+// 大爱心点击
+document.getElementById('bigHeart').addEventListener('click', (e) => {
+  // 爆发爱心
+  for (let i = 0; i < 18; i++) {
+    setTimeout(() => {
+      createClickHeart(
+        e.clientX || e.touches?.[0]?.clientX || W/2,
+        e.clientY || e.touches?.[0]?.clientY || H/2
+      );
+    }, i * 60);
+  }
+
+  // 大爱心动画
+  const heart = document.getElementById('bigHeart');
+  heart.classList.add('explode');
+  setTimeout(() => {
+    heart.classList.remove('explode');
+    // 换个爱心
+    const emojis = ['💕', '❤️', '💖', '💗', '💝'];
+    heart.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  }, 1000);
+
+  // 切换情话
+  if (!isTyping) {
+    msgIndex = (msgIndex + 1) % messages.length;
+    typeMessage();
+  }
+
+  // 撒花
+  celebrate();
+
+  hintEl.textContent = '💖 再戳戳！还有更多~';
+});
+
+// 点击页面其他地方也产生爱心
+document.addEventListener('click', (e) => {
+  // 不要重复触发大爱心的事件
+  if (e.target.closest('.big-heart') || e.target.closest('.message-card') || e.target.closest('.music-control')) return;
+  createClickHeart(e.clientX, e.clientY);
+});
+
+// 触摸时产生爱心
+document.addEventListener('touchstart', (e) => {
+  if (e.target.closest('.big-heart') || e.target.closest('.message-card') || e.target.closest('.music-control')) return;
+  const touch = e.touches[0];
+  for (let i = 0; i < 3; i++) {
+    createClickHeart(
+      touch.clientX + (Math.random() - 0.5) * 40,
+      touch.clientY + (Math.random() - 0.5) * 40
+    );
+  }
+}, { passive: true });
+
+
+// ============================================================
+// 4. 撒花特效
+// ============================================================
+function celebrate() {
+  const container = document.createElement('div');
+  container.className = 'celebration';
+  document.body.appendChild(container);
+
+  const colors = ['#FF69B4', '#FF1493', '#FFB6C1', '#FFC0CB', '#FFD700', '#FF6B6B', '#FF85A1', '#FF9999'];
+  const shapes = ['❤️', '💕', '💖', '💗', '🌸', '✨', '🌟', '🎀'];
+
+  for (let i = 0; i < 40; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random() * 100 + '%';
+    el.style.top = '-10%';
+    el.style.width = (6 + Math.random() * 8) + 'px';
+    el.style.height = (6 + Math.random() * 8) + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    el.style.animationDuration = (2 + Math.random() * 3) + 's';
+    el.style.animationDelay = (Math.random() * 2) + 's';
+    el.style.transform = `rotate(${Math.random() * 360}deg)`;
+
+    // 部分用文字代替
+    if (Math.random() > 0.7) {
+      el.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+      el.style.background = 'none';
+      el.style.fontSize = (12 + Math.random() * 10) + 'px';
+    }
+
+    container.appendChild(el);
+  }
+
+  setTimeout(() => container.remove(), 5000);
+}
+
+
+// ============================================================
+// 5. 音效（用 Web Audio API 生成简单的音效，无需外部文件）
+// ============================================================
+let audioCtx = null;
+let isMusicOn = true;
+const musicBtn = document.getElementById('musicBtn');
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playChime() {
+  if (!isMusicOn || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(523.25, now); // C5
+  osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+  osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+
+  gain.gain.setValueAtTime(0.15, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+  osc.start(now);
+  osc.stop(now + 0.8);
+}
+
+musicBtn.addEventListener('click', () => {
+  initAudio();
+  isMusicOn = !isMusicOn;
+  musicBtn.textContent = isMusicOn ? '🎵' : '🚫';
+  if (isMusicOn) playChime();
+});
+
+
+// ============================================================
+// 6. 启动
+// ============================================================
+initAudio();
+
+// 延迟开始打字
+setTimeout(() => {
+  typeMessage();
+  playChime();
+}, 1000);
+
+// 点击启动音效（浏览器策略需要用户交互）
+document.addEventListener('click', () => { initAudio(); }, { once: true });
+document.addEventListener('touchstart', () => { initAudio(); }, { once: true });
+
+// 适配 iOS 安全区域
+</script>
+</body>
+</html>
